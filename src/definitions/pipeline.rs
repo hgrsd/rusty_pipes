@@ -7,5 +7,5 @@ use super::{data_source::DataSourceDefinition, transformation::TransformationDef
 #[derive(Deserialize, Debug)]
 pub struct PipelineDefinition {
     pub sources: HashMap<String, DataSourceDefinition>,
-    pub transformations: HashMap<String, TransformationDefinition>
+    pub transformations: HashMap<String, TransformationDefinition>,
 }

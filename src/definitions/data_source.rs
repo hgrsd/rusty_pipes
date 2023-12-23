@@ -10,7 +10,7 @@ pub enum Format {
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Location {
-    FILE { path: String }
+    FILE { path: String },
 }
 
 #[derive(Deserialize, Debug)]
