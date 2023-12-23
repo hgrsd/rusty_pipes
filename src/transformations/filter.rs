@@ -17,7 +17,7 @@ macro_rules! compare {
                 let parsed = $target.parse::<i64>().unwrap();
                 v.$cmp(&parsed)
             }
-            ColumnValue::String(v) => v.as_str() > $target,
+            ColumnValue::String(v) => v.as_str().$cmp($target),
         }
     };
 }
