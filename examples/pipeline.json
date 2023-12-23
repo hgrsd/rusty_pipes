@@ -1,34 +1,40 @@
 {
-	"sources": {
-		"s0": {
-			"schema": [
-				{
-					"name": "first_name",
-					"data_type": "STRING",
-					"mandatory": true
-				},
-				{
-					"name": "salary",
-					"data_type": "DECIMAL",
-					"mandatory": true
-				}
-			],
-			"format": "CSV",
-			"location": {
-				"type": "FILE",
-				"path": "./examples/test.csv"
-			}
-		}
-	},
-	"transformations": {
-		"t0": {
-			"sources": ["s0"],
-			"operations": [
-				{
-					"type": "FILTER",
-					"predicate": "salary > 900"
-				}
-			]
-		}
-	}
+  "sources":{
+    "s0":{
+      "schema":[
+        {
+          "name":"first_name",
+          "data_type":"STRING",
+          "mandatory":true
+        },
+        {
+          "name":"salary",
+          "data_type":"DECIMAL",
+          "mandatory":true
+        }
+      ],
+      "format":"CSV",
+      "location":{
+        "type":"FILE",
+        "path":"./examples/test.csv"
+      }
+    }
+  },
+  "transformations":{
+    "t0":{
+      "sources":[
+        "s0"
+      ],
+      "operations":[
+        {
+          "type":"FILTER",
+          "predicate":"salary > 900.00"
+        },
+        {
+          "type":"FILTER",
+          "predicate":"first_name != Dave"
+        }
+      ]
+    }
+  }
 }

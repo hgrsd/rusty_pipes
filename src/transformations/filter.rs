@@ -36,9 +36,10 @@ impl Filter {
                         match operator.as_str() {
                             ">" => compare!(gt, value, &comparand),
                             ">=" => compare!(ge, value, &comparand),
-                            "==" => compare!(eq, value, &comparand),
                             "<=" => compare!(le, value, &comparand),
                             "<" => compare!(lt, value, &comparand),
+                            "!=" => compare!(ne, value, &comparand),
+                            "==" => compare!(eq, value, &comparand),
                             _ => unimplemented!(),
                         }
                     } else {
