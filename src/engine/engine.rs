@@ -9,6 +9,19 @@ use crate::{
     transformations::{Filter, Transformation},
 };
 
+fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
+    let mut transformations = vec![];
+    for operation in &definition.operations {
+        transformations.push(match operation {
+            Operation::Filter { predicate } => {
+                Box::new(Filter::new(predicate)) as Box<dyn Transformation>
+            }
+            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)) as Box<dyn Transformation>,
+        })
+    }
+    transformations
+}
+
 pub struct Engine {
     pipeline_definition: PipelineDefinition,
     loaded_dataframes: HashMap<String, DataFrame>,
@@ -46,26 +59,11 @@ impl Engine {
         Ok(result)
     }
 
-    fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
-        let mut transformations = vec![];
-        for operation in &definition.operations {
-            transformations.push(match operation {
-                Operation::Filter { predicate } => {
-                    Box::new(Filter::new(predicate)) as Box<dyn Transformation>
-                }
-                Operation::InnerJoin { on } => {
-                    Box::new(InnerJoin::new(on)) as Box<dyn Transformation>
-                }
-            })
-        }
-        transformations
-    }
-
     pub fn run(&mut self) -> Result<HashMap<String, Vec<DataFrame>>, Box<dyn Error>> {
         let mut result = HashMap::new();
 
         for (name, definition) in self.pipeline_definition.transformations.clone() {
-            let pipeline = Engine::build_pipeline(&definition);
+            let pipeline = build_pipeline(&definition);
             let data_frames = self
                 .load(&definition.sources)?
                 .into_iter()
