@@ -3,7 +3,8 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum Operation {
-    FILTER { predicate: String },
+    Filter { predicate: String },
+    InnerJoin { on: String },
 }
 
 #[derive(Deserialize, Debug, Clone)]

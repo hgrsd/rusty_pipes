@@ -2,9 +2,9 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
 pub enum DataType {
-    INTEGER,
-    DECIMAL,
-    STRING,
+    Integer,
+    Decimal,
+    String,
 }
 
 #[derive(Deserialize, Debug)]

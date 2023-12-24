@@ -31,9 +31,9 @@ impl<'a> FileLoader<'a> {
             for (i, definition) in self.schema.iter().enumerate() {
                 let value = &result[i];
                 let parsed_value = match definition.data_type {
-                    DataType::INTEGER => ColumnValue::Integer(value.parse::<i64>()?),
-                    DataType::DECIMAL => ColumnValue::Decimal(value.parse::<f64>()?),
-                    DataType::STRING => ColumnValue::String(value.to_owned()),
+                    DataType::Integer => ColumnValue::Integer(value.parse::<i64>()?),
+                    DataType::Decimal => ColumnValue::Decimal(value.parse::<f64>()?),
+                    DataType::String => ColumnValue::String(value.to_owned()),
                 };
                 cols.insert(definition.column_name.clone(), parsed_value);
             }

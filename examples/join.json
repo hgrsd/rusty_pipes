@@ -1,0 +1,56 @@
+{
+  "sources": {
+    "salaries": {
+      "schema": [
+        {
+          "column_name": "first_name",
+          "data_type": "String",
+          "mandatory": true
+        },
+        {
+          "column_name": "salary",
+          "data_type": "Decimal",
+          "mandatory": true
+        }
+      ],
+      "source": {
+        "type": "FILE",
+        "format": "CSV",
+        "path": "./examples/salaries.csv"
+      }
+    },
+    "lastnames": {
+      "schema": [
+        {
+          "column_name": "first_name",
+          "data_type": "String",
+          "mandatory": true
+        },
+        {
+          "column_name": "last_name",
+          "data_type": "String",
+          "mandatory": true
+        }
+      ],
+      "source": {
+        "type": "FILE",
+        "format": "CSV",
+        "path": "./examples/lastnames.csv"
+      }
+    }
+  },
+  "transformations": {
+    "joined": {
+      "sources": [
+        "salaries",
+        "lastnames"
+      ],
+      "operations": [
+        {
+          "type": "InnerJoin",
+          "on": "first_name = first_name"
+        }
+      ]
+    }
+  }
+}

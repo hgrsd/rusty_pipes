@@ -1,49 +1,38 @@
 {
   "sources": {
-    "s0": {
+    "salaries": {
       "schema": [
         {
           "column_name": "first_name",
-          "data_type": "STRING",
+          "data_type": "String",
           "mandatory": true
         },
         {
           "column_name": "salary",
-          "data_type": "DECIMAL",
+          "data_type": "Decimal",
           "mandatory": true
         }
       ],
       "source": {
         "type": "FILE",
         "format": "CSV",
-        "path": "./examples/test.csv"
+        "path": "./examples/salaries.csv"
       }
     }
   },
   "transformations": {
-    "t0": {
+    "filtered": {
       "sources": [
-        "s0"
+        "salaries"
       ],
       "operations": [
         {
-          "type": "FILTER",
+          "type": "Filter",
           "predicate": "salary > 900.00"
         },
         {
-          "type": "FILTER",
+          "type": "Filter",
           "predicate": "first_name != Dave"
-        }
-      ]
-    },
-    "t1": {
-      "sources": [
-        "s0"
-      ],
-      "operations": [
-        {
-          "type": "FILTER",
-          "predicate": "salary < 900.00"
         }
       ]
     }

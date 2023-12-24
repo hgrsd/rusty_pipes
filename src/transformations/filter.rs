@@ -3,7 +3,7 @@ use crate::dataframe::{ColumnValue, DataFrame};
 use super::Transformation;
 
 pub struct Filter {
-    apply: Box<dyn Fn(DataFrame) -> DataFrame>,
+    apply: Box<dyn Fn(&DataFrame) -> DataFrame>,
 }
 
 macro_rules! compare {
@@ -29,7 +29,7 @@ impl Filter {
         let operator = s.next().unwrap().to_owned();
         let comparand = s.next().unwrap().to_owned();
 
-        let apply = Box::new(move |df: DataFrame| {
+        let apply = Box::new(move |df: &DataFrame| {
             df.iter()
                 .filter(|row| {
                     if let Some(value) = row.get(&field_name) {
@@ -55,7 +55,7 @@ impl Filter {
 }
 
 impl Transformation for Filter {
-    fn transform(&self, df: DataFrame) -> DataFrame {
-        (self.apply)(df)
+    fn transform(&self, dfs: Vec<DataFrame>) -> Vec<DataFrame> {
+        vec![(self.apply)(&dfs[0])]
     }
 }
