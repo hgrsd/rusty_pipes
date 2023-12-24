@@ -4,13 +4,13 @@ use super::column::ColumnDefinition;
 
 #[derive(Deserialize, Debug)]
 pub enum Format {
-    CSV,
+    Csv,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
 pub enum Source {
-    FILE { path: String, format: Format },
+    File { path: String, format: Format },
 }
 
 #[derive(Deserialize, Debug)]

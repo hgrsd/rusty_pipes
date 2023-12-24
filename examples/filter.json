@@ -14,8 +14,8 @@
         }
       ],
       "source": {
-        "type": "FILE",
-        "format": "CSV",
+        "type": "File",
+        "format": "Csv",
         "path": "./examples/salaries.csv"
       }
     }

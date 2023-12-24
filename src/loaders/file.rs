@@ -46,7 +46,7 @@ impl<'a> FileLoader<'a> {
 impl Loader for FileLoader<'_> {
     fn load(&self) -> Result<DataFrame, Box<dyn Error>> {
         match self.format {
-            Format::CSV => self.load_csv(),
+            Format::Csv => self.load_csv(),
         }
     }
 }

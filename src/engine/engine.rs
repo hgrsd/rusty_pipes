@@ -32,7 +32,7 @@ impl Engine {
             }
             let definition = self.pipeline_definition.sources.get(name).unwrap();
             let loader = match &definition.source {
-                Source::FILE { path, format } => {
+                Source::File { path, format } => {
                     let path = Path::new(path);
                     FileLoader::new(&path, format, &definition.schema)
                 }
