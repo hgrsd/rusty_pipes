@@ -1,4 +1,11 @@
-mod data_frame;
+use serde::Serialize;
+use std::collections::HashMap;
 
-pub use data_frame::ColumnValue;
-pub use data_frame::DataFrame;
+#[derive(Debug, Serialize, Clone)]
+pub enum ColumnValue {
+    Integer(i64),
+    Decimal(f64),
+    String(String),
+}
+
+pub type DataFrame = Vec<HashMap<String, ColumnValue>>;

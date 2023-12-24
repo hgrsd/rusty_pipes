@@ -1,9 +1,7 @@
-use std::{error::Error};
+use std::error::Error;
 
+use crate::definitions::PipelineDefinition;
 use crate::engine::Engine;
-use crate::{
-    definitions::{PipelineDefinition},
-};
 
 mod dataframe;
 mod definitions;
