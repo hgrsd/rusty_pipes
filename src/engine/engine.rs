@@ -10,16 +10,17 @@ use crate::{
 };
 
 fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
-    let mut transformations = vec![];
-    for operation in &definition.operations {
-        transformations.push(match operation {
-            Operation::Filter { predicate } => {
-                Box::new(Filter::new(predicate)) as Box<dyn Transformation>
-            }
-            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)) as Box<dyn Transformation>,
+    definition
+        .operations
+        .iter()
+        .map(|def| {
+            let op: Box<dyn Transformation> = match def {
+                Operation::Filter { predicate } => Box::new(Filter::new(predicate)),
+                Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
+            };
+            op
         })
-    }
-    transformations
+        .collect()
 }
 
 pub struct Engine {
