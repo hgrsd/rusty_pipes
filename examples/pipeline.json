@@ -35,6 +35,17 @@
           "predicate": "first_name != Dave"
         }
       ]
+    },
+    "t1": {
+      "sources": [
+        "s0"
+      ],
+      "operations": [
+        {
+          "type": "FILTER",
+          "predicate": "salary < 900.00"
+        }
+      ]
     }
   }
 }

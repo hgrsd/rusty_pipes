@@ -19,7 +19,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pipeline: PipelineDefinition = serde_json::from_str(&file).unwrap();
     let mut engine = Engine::from_definition(pipeline);
 
-    let output = engine.run();
+    let output = engine.run()?;
 
     println!("{:?}", output);
     Ok(())
