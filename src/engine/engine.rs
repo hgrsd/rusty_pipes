@@ -49,7 +49,6 @@ impl Engine {
     }
 
     fn build_pipeline(
-        &self,
         definition: &TransformationDefinition,
     ) -> Vec<Box<dyn Transformation>> {
         let mut transformations = vec![];
@@ -65,11 +64,9 @@ impl Engine {
 
     pub fn run(&mut self) -> Result<HashMap<String, DataFrame>, Box<dyn Error>> {
         let mut result = HashMap::new();
-        let transformations: HashMap<String, TransformationDefinition> =
-            self.pipeline_definition.transformations.clone();
 
-        for (name, definition) in transformations {
-            let pipeline = self.build_pipeline(&definition);
+        for (name, definition) in self.pipeline_definition.transformations.clone() {
+            let pipeline = Engine::build_pipeline(&definition);
             let data_frames = self.load_dataframes(&definition.sources)?;
             let transformed = pipeline
                 .into_iter()
