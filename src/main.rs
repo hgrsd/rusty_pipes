@@ -1,44 +1,26 @@
 use std::{collections::HashMap, error::Error, path::Path};
 
-use dataframe::file::FileLoader;
-
 use crate::{
-    dataframe::{loader::Loader, DataFrame},
-    definitions::{Location, Operation, PipelineDefinition},
+    dataframe::DataFrame,
+    definitions::{Operation, PipelineDefinition, Source},
+    loaders::{FileLoader, Loader},
     transformations::{Filter, Transformation},
 };
+use crate::engine::Engine;
 
 mod dataframe;
 mod definitions;
+mod engine;
+mod loaders;
 mod transformations;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let file = std::fs::read_to_string("./examples/pipeline.json").unwrap();
-    let parsed: PipelineDefinition = serde_json::from_str(&file).unwrap();
-    let s0 = parsed.sources.get("s0").unwrap();
+    let pipeline: PipelineDefinition = serde_json::from_str(&file).unwrap();
+    let mut engine = Engine::from_definition(pipeline);
 
-    let df = match &s0.location {
-        Location::FILE { path } => {
-            let path = Path::new(&path);
-            let loader = FileLoader::new(&path, &s0.format, &s0.schema);
-            loader.load()?
-        }
-    };
+    let output = engine.run();
 
-    let transformed: HashMap<String, DataFrame> = parsed
-        .transformations
-        .iter()
-        .map(|(key, definition)| {
-            let transformed = definition.operations.iter().fold(df.clone(), |acc, cur| {
-                let op = match cur {
-                    Operation::FILTER { predicate } => Filter::new(&predicate),
-                };
-                op.transform(&acc)
-            });
-            (key.clone(), transformed)
-        })
-        .collect();
-
-    println!("{:?}", transformed);
+    println!("{:?}", output);
     Ok(())
 }

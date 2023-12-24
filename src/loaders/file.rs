@@ -35,7 +35,7 @@ impl<'a> FileLoader<'a> {
                     DataType::DECIMAL => ColumnValue::Decimal(value.parse::<f64>()?),
                     DataType::STRING => ColumnValue::String(value.to_owned()),
                 };
-                cols.insert(definition.name.clone(), parsed_value);
+                cols.insert(definition.column_name.clone(), parsed_value);
             }
             df.push(cols);
         }

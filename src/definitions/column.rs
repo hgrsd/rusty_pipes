@@ -9,7 +9,7 @@ pub enum DataType {
 
 #[derive(Deserialize, Debug)]
 pub struct ColumnDefinition {
-    pub name: String,
+    pub column_name: String,
     pub data_type: DataType,
     pub mandatory: bool,
 }

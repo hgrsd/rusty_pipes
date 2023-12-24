@@ -9,13 +9,12 @@ pub enum Format {
 
 #[derive(Deserialize, Debug)]
 #[serde(tag = "type")]
-pub enum Location {
-    FILE { path: String },
+pub enum Source {
+    FILE { path: String, format: Format },
 }
 
 #[derive(Deserialize, Debug)]
 pub struct DataSourceDefinition {
     pub schema: Vec<ColumnDefinition>,
-    pub format: Format,
-    pub location: Location,
+    pub source: Source,
 }
