@@ -1,12 +1,12 @@
 use std::{collections::HashMap, error::Error, path::Path};
 
+use crate::definitions::TransformationDefinition;
 use crate::{
     dataframe::DataFrame,
     definitions::{Operation, PipelineDefinition, Source},
     loaders::{FileLoader, Loader},
     transformations::{Filter, Transformation},
 };
-use crate::definitions::TransformationDefinition;
 
 pub struct Engine {
     pipeline_definition: PipelineDefinition,
@@ -21,7 +21,10 @@ impl Engine {
         }
     }
 
-    fn load_dataframes(&mut self, source_names: &[String]) -> Result<Vec<&DataFrame>, Box<dyn Error>> {
+    fn load_dataframes(
+        &mut self,
+        source_names: &[String],
+    ) -> Result<Vec<&DataFrame>, Box<dyn Error>> {
         for name in source_names.iter() {
             if self.loaded_dataframes.contains_key(name) {
                 continue;
@@ -40,12 +43,15 @@ impl Engine {
 
         let mut result = vec![];
         for name in source_names.iter() {
-           result.push(self.loaded_dataframes.get(name).unwrap()) ;
+            result.push(self.loaded_dataframes.get(name).unwrap());
         }
         Ok(result)
     }
 
-    fn build_pipeline(&self, definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
+    fn build_pipeline(
+        &self,
+        definition: &TransformationDefinition,
+    ) -> Vec<Box<dyn Transformation>> {
         let mut transformations = vec![];
         for operation in &definition.operations {
             transformations.push(match operation {
@@ -59,14 +65,17 @@ impl Engine {
 
     pub fn run(&mut self) -> Result<HashMap<String, DataFrame>, Box<dyn Error>> {
         let mut result = HashMap::new();
-        let transformations: HashMap<String, TransformationDefinition> = self.pipeline_definition.transformations.clone();
+        let transformations: HashMap<String, TransformationDefinition> =
+            self.pipeline_definition.transformations.clone();
 
         for (name, definition) in transformations {
             let pipeline = self.build_pipeline(&definition);
             let data_frames = self.load_dataframes(&definition.sources)?;
             let transformed = pipeline
                 .into_iter()
-                .fold(data_frames[0].clone(), |acc, transformer| transformer.transform(acc));
+                .fold(data_frames[0].clone(), |acc, transformer| {
+                    transformer.transform(acc)
+                });
             result.insert(name.to_owned(), transformed);
         }
 
