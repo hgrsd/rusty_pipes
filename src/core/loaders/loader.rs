@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use crate::core::dataframe::DataFrame;
+use crate::core::dataframe::Dataframe;
 
 pub trait Loader {
-    fn load(&self) -> Result<DataFrame, Box<dyn Error>>;
+    fn load(&self) -> Result<Dataframe, Box<dyn Error>>;
 }

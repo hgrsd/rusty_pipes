@@ -1,4 +1,4 @@
-use crate::core::dataframe::{ColumnValue, DataFrame};
+use crate::core::dataframe::{ColumnValue, Dataframe};
 use crate::dataframe::Row;
 use std::collections::HashMap;
 
@@ -13,11 +13,11 @@ fn extract_identifier(from: &ColumnValue) -> Option<String> {
 }
 
 pub struct InnerJoin {
-    apply: Box<dyn Fn(&DataFrame, &DataFrame) -> DataFrame>,
+    apply: Box<dyn Fn(&Dataframe, &Dataframe) -> Dataframe>,
 }
 
 impl InnerJoin {
-    fn group_columns<'a>(key: &str, df: &'a DataFrame) -> HashMap<String, Vec<&'a Row>> {
+    fn group_columns<'a>(key: &str, df: &'a Dataframe) -> HashMap<String, Vec<&'a Row>> {
         let mut grouped: HashMap<String, Vec<&Row>> = HashMap::new();
         for row in df {
             if let Some(identifier) = row.get(key).and_then(extract_identifier) {
@@ -37,9 +37,9 @@ impl InnerJoin {
             left_field_name.trim().to_owned(),
             right_field_name.trim().to_owned(),
         );
-        let apply = Box::new(move |left: &DataFrame, right: &DataFrame| {
+        let apply = Box::new(move |left: &Dataframe, right: &Dataframe| {
             let right_by_key = Self::group_columns(&right_owned, right);
-            let mut joined_set: DataFrame = vec![];
+            let mut joined_set: Dataframe = vec![];
             for row in left.iter() {
                 if let Some(identifier) = row.get(&left_owned).and_then(extract_identifier) {
                     if let Some(matches) = right_by_key.get(&identifier) {
@@ -63,7 +63,7 @@ impl InnerJoin {
 }
 
 impl Transformation for InnerJoin {
-    fn transform(&self, dfs: Vec<DataFrame>) -> Vec<DataFrame> {
+    fn transform(&self, dfs: Vec<Dataframe>) -> Vec<Dataframe> {
         vec![(self.apply)(&dfs[0], &dfs[1])]
     }
 }

@@ -3,7 +3,7 @@ use std::{collections::HashMap, error::Error, path::Path};
 
 use crate::definitions::TransformationDefinition;
 use crate::{
-    dataframe::DataFrame,
+    dataframe::Dataframe,
     definitions::{Operation, PipelineDefinition, Source},
     loaders::{FileLoader, Loader},
     transformations::{Filter, InnerJoin, Transformation},
@@ -34,7 +34,7 @@ impl Engine {
         }
     }
 
-    fn load_dataframes(&mut self) -> HashMap<String, DataFrame> {
+    fn load_dataframes(&mut self) -> HashMap<String, Dataframe> {
         self.pipeline_definition
             .sources
             .par_iter()
@@ -50,7 +50,7 @@ impl Engine {
             .collect()
     }
 
-    pub fn run(&mut self) -> Result<HashMap<String, Vec<DataFrame>>, Box<dyn Error>> {
+    pub fn run(&mut self) -> Result<HashMap<String, Vec<Dataframe>>, Box<dyn Error>> {
         let dfs = self.load_dataframes();
 
         let result = self

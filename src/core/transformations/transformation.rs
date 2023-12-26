@@ -1,5 +1,5 @@
-use crate::core::dataframe::DataFrame;
+use crate::core::dataframe::Dataframe;
 
 pub trait Transformation {
-    fn transform(&self, dfs: Vec<DataFrame>) -> Vec<DataFrame>;
+    fn transform(&self, dfs: Vec<Dataframe>) -> Vec<Dataframe>;
 }

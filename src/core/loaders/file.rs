@@ -1,7 +1,7 @@
 use std::{collections::HashMap, error::Error, path::Path};
 
 use crate::core::{
-    dataframe::{ColumnValue, DataFrame},
+    dataframe::{ColumnValue, Dataframe},
     definitions::{ColumnDefinition, DataType, Format},
 };
 use crate::dataframe::Row;
@@ -23,7 +23,7 @@ impl<'a> FileLoader<'a> {
         }
     }
 
-    fn load_csv(&self) -> Result<DataFrame, Box<dyn Error>> {
+    fn load_csv(&self) -> Result<Dataframe, Box<dyn Error>> {
         let mut reader = csv::Reader::from_path(self.path)?;
         let mut df = vec![];
         for row_raw in reader.records() {
@@ -45,7 +45,7 @@ impl<'a> FileLoader<'a> {
 }
 
 impl Loader for FileLoader<'_> {
-    fn load(&self) -> Result<DataFrame, Box<dyn Error>> {
+    fn load(&self) -> Result<Dataframe, Box<dyn Error>> {
         match self.format {
             Format::Csv => self.load_csv(),
         }
