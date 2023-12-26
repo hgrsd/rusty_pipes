@@ -8,4 +8,6 @@ pub enum ColumnValue {
     String(String),
 }
 
-pub type DataFrame = Vec<HashMap<String, ColumnValue>>;
+pub type Row = HashMap<String, ColumnValue>;
+
+pub type DataFrame = Vec<Row>;

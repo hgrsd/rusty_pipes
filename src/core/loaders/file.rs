@@ -4,6 +4,7 @@ use crate::core::{
     dataframe::{ColumnValue, DataFrame},
     definitions::{ColumnDefinition, DataType, Format},
 };
+use crate::dataframe::Row;
 
 use super::loader::Loader;
 
@@ -25,9 +26,9 @@ impl<'a> FileLoader<'a> {
     fn load_csv(&self) -> Result<DataFrame, Box<dyn Error>> {
         let mut reader = csv::Reader::from_path(self.path)?;
         let mut df = vec![];
-        for row in reader.records() {
-            let mut cols: HashMap<String, ColumnValue> = HashMap::new();
-            let result = row?;
+        for row_raw in reader.records() {
+            let mut row: Row = HashMap::new();
+            let result = row_raw?;
             for (i, definition) in self.schema.iter().enumerate() {
                 let value = &result[i];
                 let parsed_value = match definition.data_type {
@@ -35,9 +36,9 @@ impl<'a> FileLoader<'a> {
                     DataType::Decimal => ColumnValue::Decimal(value.parse::<f64>()?),
                     DataType::String => ColumnValue::String(value.to_owned()),
                 };
-                cols.insert(definition.column_name.clone(), parsed_value);
+                row.insert(definition.column_name.clone(), parsed_value);
             }
-            df.push(cols);
+            df.push(row);
         }
         Ok(df)
     }
