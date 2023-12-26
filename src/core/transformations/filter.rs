@@ -1,5 +1,5 @@
-use crate::core::dataframe::{ColumnValue, DataFrame};
 use super::Transformation;
+use crate::core::dataframe::{ColumnValue, DataFrame};
 
 pub struct Filter {
     apply: Box<dyn Fn(&DataFrame) -> DataFrame>,
