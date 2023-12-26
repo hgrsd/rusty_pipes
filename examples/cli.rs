@@ -1,5 +1,5 @@
 use rusty_pipes::definitions::PipelineDefinition;
-use rusty_pipes::engine::Engine;
+use rusty_pipes::core::engine::Engine;
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
