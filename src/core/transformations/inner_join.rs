@@ -269,4 +269,49 @@ mod test {
             ]
         )
     }
+
+    #[test]
+    fn joins_on_integers() {
+        let dfs = vec![
+            vec![HashMap::from([
+                (String::from("id"), ColumnValue::Integer(1)),
+                (String::from("foo"), ColumnValue::Integer(0)),
+            ])],
+            vec![HashMap::from([
+                (String::from("id"), ColumnValue::Integer(1)),
+                (String::from("bar"), ColumnValue::Integer(3)),
+            ])],
+        ];
+
+        let op = InnerJoin::new("id = id");
+
+        let result = op.transform(dfs);
+        assert_eq!(
+            result[0],
+            vec![HashMap::from([
+                (String::from("id"), ColumnValue::Integer(1)),
+                (String::from("foo"), ColumnValue::Integer(0)),
+                (String::from("bar"), ColumnValue::Integer(3)),
+            ]),]
+        )
+    }
+
+    #[test]
+    fn does_not_join_on_floats() {
+        let dfs = vec![
+            vec![HashMap::from([
+                (String::from("id"), ColumnValue::Decimal(1.0)),
+                (String::from("foo"), ColumnValue::Integer(0)),
+            ])],
+            vec![HashMap::from([
+                (String::from("id"), ColumnValue::Decimal(1.0)),
+                (String::from("bar"), ColumnValue::Integer(3)),
+            ])],
+        ];
+
+        let op = InnerJoin::new("id = id");
+
+        let result = op.transform(dfs);
+        assert_eq!(result[0], vec![],)
+    }
 }

@@ -1,5 +1,5 @@
 use rayon::prelude::*;
-use std::{collections::HashMap, error::Error, path::Path};
+use std::{collections::HashMap, path::Path};
 
 use crate::definitions::TransformationDefinition;
 use crate::{
