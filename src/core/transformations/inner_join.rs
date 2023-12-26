@@ -1,6 +1,6 @@
 use crate::core::dataframe::{ColumnValue, DataFrame};
-use std::collections::HashMap;
 use crate::dataframe::Row;
+use std::collections::HashMap;
 
 use super::Transformation;
 
@@ -17,10 +17,7 @@ pub struct InnerJoin {
 }
 
 impl InnerJoin {
-    fn group_columns<'a>(
-        key: &str,
-        df: &'a DataFrame,
-    ) -> HashMap<String, Vec<&'a Row>> {
+    fn group_columns<'a>(key: &str, df: &'a DataFrame) -> HashMap<String, Vec<&'a Row>> {
         let mut grouped: HashMap<String, Vec<&Row>> = HashMap::new();
         for row in df {
             if let Some(identifier) = row.get(key).and_then(extract_identifier) {

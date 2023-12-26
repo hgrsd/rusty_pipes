@@ -1,3 +1,4 @@
+use rayon::prelude::*;
 use std::{collections::HashMap, error::Error, path::Path};
 
 use crate::definitions::TransformationDefinition;
@@ -24,56 +25,53 @@ fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transfor
 
 pub struct Engine {
     pipeline_definition: PipelineDefinition,
-    loaded_dataframes: HashMap<String, DataFrame>,
 }
 
 impl Engine {
     pub fn from_definition(pipeline_definition: PipelineDefinition) -> Self {
         Engine {
             pipeline_definition,
-            loaded_dataframes: HashMap::new(),
         }
     }
 
-    fn load(&mut self, source_names: &[String]) -> Result<Vec<&DataFrame>, Box<dyn Error>> {
-        for name in source_names.iter() {
-            if self.loaded_dataframes.contains_key(name) {
-                continue;
-            }
-            let definition = self.pipeline_definition.sources.get(name).unwrap();
-            let loader = match &definition.source {
-                Source::File { path, format } => {
-                    let path = Path::new(path);
-                    FileLoader::new(&path, format, &definition.schema)
-                }
-            };
-            let loaded_dataframe = loader.load()?;
-            self.loaded_dataframes
-                .insert(name.to_owned(), loaded_dataframe);
-        }
-
-        let mut result = vec![];
-        for name in source_names.iter() {
-            result.push(self.loaded_dataframes.get(name).unwrap());
-        }
-        Ok(result)
+    fn load_dataframes(&mut self) -> HashMap<String, DataFrame> {
+        self.pipeline_definition
+            .sources
+            .par_iter()
+            .map(|(name, definition)| {
+                let loader = match &definition.source {
+                    Source::File { path, format } => {
+                        let path = Path::new(path);
+                        FileLoader::new(&path, format, &definition.schema)
+                    }
+                };
+                (name.clone(), loader.load().unwrap())
+            })
+            .collect()
     }
 
     pub fn run(&mut self) -> Result<HashMap<String, Vec<DataFrame>>, Box<dyn Error>> {
-        let mut result = HashMap::new();
+        let dfs = self.load_dataframes();
 
-        for (name, definition) in self.pipeline_definition.transformations.clone() {
-            let pipeline = build_pipeline(&definition);
-            let data_frames = self
-                .load(&definition.sources)?
-                .into_iter()
-                .cloned()
-                .collect();
-            let transformed = pipeline
-                .into_iter()
-                .fold(data_frames, |acc, transformer| transformer.transform(acc));
-            result.insert(name.to_owned(), transformed);
-        }
+        let result = self
+            .pipeline_definition
+            .transformations
+            .par_iter()
+            .map(|(name, definition)| {
+                let pipeline = build_pipeline(definition);
+                let data_frames = definition
+                    .sources
+                    .iter()
+                    .map(|source| dfs.get(source).unwrap().clone())
+                    .collect();
+                (
+                    name.clone(),
+                    pipeline
+                        .into_iter()
+                        .fold(data_frames, |acc, transformer| transformer.transform(acc)),
+                )
+            })
+            .collect();
 
         Ok(result)
     }
