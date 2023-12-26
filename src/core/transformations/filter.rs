@@ -64,17 +64,19 @@ mod test {
     use super::*;
     use std::collections::HashMap;
 
-    #[test]
-    fn filter_gt() {
-        let df: Dataframe = vec![
+    fn df() -> Vec<Dataframe> {
+        vec![vec![
             HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
             HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
             HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
+        ]]
+    }
 
+    #[test]
+    fn filter_gt() {
         let op = Filter::new("foo > 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
@@ -87,15 +89,9 @@ mod test {
 
     #[test]
     fn filter_gte() {
-        let df: Dataframe = vec![
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
-
         let op = Filter::new("foo >= 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
@@ -108,15 +104,9 @@ mod test {
 
     #[test]
     fn filter_lt() {
-        let df: Dataframe = vec![
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
-
         let op = Filter::new("foo < 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
@@ -129,15 +119,9 @@ mod test {
 
     #[test]
     fn filter_lte() {
-        let df: Dataframe = vec![
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
-
         let op = Filter::new("foo <= 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
@@ -150,15 +134,9 @@ mod test {
 
     #[test]
     fn filter_eq() {
-        let df: Dataframe = vec![
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
-
         let op = Filter::new("foo == 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
@@ -171,15 +149,9 @@ mod test {
 
     #[test]
     fn filter_ne() {
-        let df: Dataframe = vec![
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
-            HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
-        ];
-
         let op = Filter::new("foo != 1");
 
-        let result = op.transform(vec![df]);
+        let result = op.transform(df());
 
         assert_eq!(
             result[0],
