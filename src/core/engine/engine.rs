@@ -1,6 +1,7 @@
 use rayon::prelude::*;
 use std::{collections::HashMap, path::Path};
 
+use crate::core::context::Context;
 use crate::definitions::TransformationDefinition;
 use crate::{
     dataframe::Dataframe,
@@ -9,13 +10,16 @@ use crate::{
     transformations::{Filter, InnerJoin, Transformation},
 };
 
-fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
+fn build_pipeline(
+    definition: &TransformationDefinition,
+    context: &Context,
+) -> Vec<Box<dyn Transformation>> {
     definition
         .operations
         .iter()
         .map(|def| {
             let op: Box<dyn Transformation> = match def {
-                Operation::Filter { predicate } => Box::new(Filter::new(predicate)),
+                Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)),
                 Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
             };
             op
@@ -37,7 +41,7 @@ impl Engine {
         }
     }
 
-    fn load_dataframes(&mut self) -> HashMap<String, Dataframe> {
+    fn load_dataframes(&self) -> HashMap<String, Dataframe> {
         self.pipeline_definition
             .sources
             .par_iter()
@@ -57,7 +61,7 @@ impl Engine {
     /// - fetch data from the defined data sources
     /// - run each transformation
     /// - yield a map of each transformation output, keyed by their name
-    pub fn run(&mut self) -> HashMap<String, Vec<Dataframe>> {
+    pub fn run(&mut self, context: &Context) -> HashMap<String, Vec<Dataframe>> {
         let dfs = self.load_dataframes();
 
         let result = self
@@ -65,7 +69,7 @@ impl Engine {
             .transformations
             .par_iter()
             .map(|(name, definition)| {
-                let pipeline = build_pipeline(definition);
+                let pipeline = build_pipeline(definition, context);
                 let data_frames = definition
                     .sources
                     .iter()

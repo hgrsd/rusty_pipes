@@ -1,3 +1,4 @@
+pub mod context;
 pub mod dataframe;
 pub mod definitions;
 pub mod engine;

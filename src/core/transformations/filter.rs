@@ -1,4 +1,5 @@
 use super::Transformation;
+use crate::core::context::Context;
 use crate::core::dataframe::{ColumnValue, Dataframe};
 
 /// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
@@ -23,27 +24,38 @@ macro_rules! compare {
     };
 }
 
+fn resolve_parameter(key: &str, context: &Context) -> String {
+    if key.starts_with(":") {
+        context
+            .parameter_value(key.chars().skip(1).collect::<String>().as_str())
+            .expect(&format!("No parameter with key {} found", key))
+            .to_owned()
+    } else {
+        key.to_owned()
+    }
+}
+
 impl Filter {
     /// Construct a new Filter from the given predicate. The expected format of this predicate is
     /// "column_name operation literal" where operation is one of >, >=, <, <=, ==, or != and the literal is
     /// an integer, decimal, or string. E.g., "column_one >= 100.5".
-    pub fn new(predicate: &str) -> Self {
+    pub fn new(predicate: &str, context: &Context) -> Self {
         let mut s = predicate.split_whitespace();
         let field_name = s.next().unwrap().to_owned();
         let operator = s.next().unwrap().to_owned();
-        let comparand = s.next().unwrap().to_owned();
+        let target = s.next().map(|x| resolve_parameter(x, context)).unwrap();
 
         let apply = Box::new(move |df: &Dataframe| {
             df.iter()
                 .filter(|row| {
                     if let Some(value) = row.get(&field_name) {
                         match operator.as_str() {
-                            ">" => compare!(gt, value, &comparand),
-                            ">=" => compare!(ge, value, &comparand),
-                            "<" => compare!(lt, value, &comparand),
-                            "<=" => compare!(le, value, &comparand),
-                            "==" => compare!(eq, value, &comparand),
-                            "!=" => compare!(ne, value, &comparand),
+                            ">" => compare!(gt, value, &target),
+                            ">=" => compare!(ge, value, &target),
+                            "<" => compare!(lt, value, &target),
+                            "<=" => compare!(le, value, &target),
+                            "==" => compare!(eq, value, &target),
+                            "!=" => compare!(ne, value, &target),
                             _ => unimplemented!(),
                         }
                     } else {
@@ -77,9 +89,13 @@ mod test {
         ]]
     }
 
+    fn ctx(params: HashMap<String, String>) -> Context {
+        Context::new(params)
+    }
+
     #[test]
     fn filter_gt() {
-        let op = Filter::new("foo > 1");
+        let op = Filter::new("foo > 1", &ctx(HashMap::default()));
 
         let result = op.transform(df());
 
@@ -94,7 +110,7 @@ mod test {
 
     #[test]
     fn filter_gte() {
-        let op = Filter::new("foo >= 1");
+        let op = Filter::new("foo >= 1", &ctx(HashMap::default()));
 
         let result = op.transform(df());
 
@@ -109,7 +125,7 @@ mod test {
 
     #[test]
     fn filter_lt() {
-        let op = Filter::new("foo < 1");
+        let op = Filter::new("foo < 1", &ctx(HashMap::default()));
 
         let result = op.transform(df());
 
@@ -124,7 +140,7 @@ mod test {
 
     #[test]
     fn filter_lte() {
-        let op = Filter::new("foo <= 1");
+        let op = Filter::new("foo <= 1", &ctx(HashMap::default()));
 
         let result = op.transform(df());
 
@@ -139,7 +155,7 @@ mod test {
 
     #[test]
     fn filter_eq() {
-        let op = Filter::new("foo == 1");
+        let op = Filter::new("foo == 1", &ctx(HashMap::default()));
 
         let result = op.transform(df());
 
@@ -154,7 +170,25 @@ mod test {
 
     #[test]
     fn filter_ne() {
-        let op = Filter::new("foo != 1");
+        let op = Filter::new("foo != 1", &ctx(HashMap::default()));
+
+        let result = op.transform(df());
+
+        assert_eq!(
+            result[0],
+            vec![
+                HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
+                HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
+            ]
+        )
+    }
+
+    #[test]
+    fn filter_using_parameter() {
+        let op = Filter::new(
+            "foo != :param_name",
+            &ctx(HashMap::from([("param_name".to_owned(), "1".to_owned())])),
+        );
 
         let result = op.transform(df());
 
