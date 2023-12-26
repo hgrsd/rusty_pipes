@@ -1,5 +1,4 @@
-use crate::dataframe::{ColumnValue, DataFrame};
-
+use crate::core::dataframe::{ColumnValue, DataFrame};
 use super::Transformation;
 
 pub struct Filter {

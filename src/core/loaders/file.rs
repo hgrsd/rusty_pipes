@@ -1,6 +1,6 @@
 use std::{collections::HashMap, error::Error, path::Path};
 
-use crate::{
+use crate::core::{
     dataframe::{ColumnValue, DataFrame},
     definitions::{ColumnDefinition, DataType, Format},
 };

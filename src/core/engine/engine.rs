@@ -1,12 +1,11 @@
 use std::{collections::HashMap, error::Error, path::Path};
 
 use crate::definitions::TransformationDefinition;
-use crate::transformations::InnerJoin;
 use crate::{
     dataframe::DataFrame,
     definitions::{Operation, PipelineDefinition, Source},
     loaders::{FileLoader, Loader},
-    transformations::{Filter, Transformation},
+    transformations::{Filter, InnerJoin, Transformation},
 };
 
 fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transformation>> {
