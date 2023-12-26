@@ -19,18 +19,25 @@ pub struct InnerJoin {
 }
 
 impl InnerJoin {
-    fn group_columns<'a>(key: &str, df: &'a Dataframe) -> HashMap<String, Vec<&'a Row>> {
-        let mut grouped: HashMap<String, Vec<&Row>> = HashMap::new();
-        for row in df {
+    fn group_rows<'a>(key: &str, df: &'a Dataframe) -> HashMap<String, Vec<&'a Row>> {
+        let grouped = df.iter().filter_map(|row| {
             if let Some(identifier) = row.get(key).and_then(extract_identifier) {
-                if let Some(existing) = grouped.get_mut(&identifier) {
-                    existing.push(row);
-                } else {
-                    grouped.insert(identifier, vec![row]);
-                }
+                Some((identifier, vec![row]))
+            } else {
+                None
+            }
+        });
+
+        let mut result: HashMap<String, Vec<&Row>> = HashMap::new();
+        for (identifier, rows) in grouped {
+            if let Some(existing_rows) = result.get_mut(&identifier) {
+                existing_rows.extend(rows);
+            } else {
+                result.insert(identifier, rows);
             }
         }
-        grouped
+
+        result
     }
 
     /// Construct a new InnerJoin from the given join clause.
@@ -38,32 +45,36 @@ impl InnerJoin {
     /// and right_column_name refer to the names of the identifying columns in the left and right dataframes.
     pub fn new(join_on: &str) -> Self {
         let (left_field_name, right_field_name) = join_on.split_once("=").unwrap();
-        let (left_owned, right_owned) = (
+        let (left_key, right_key) = (
             left_field_name.trim().to_owned(),
             right_field_name.trim().to_owned(),
         );
-        let apply = Box::new(move |left: &Dataframe, right: &Dataframe| {
-            let right_by_key = Self::group_columns(&right_owned, right);
-            let mut dataframe: Dataframe = vec![];
 
-            for row in left.iter() {
-                if let Some(identifier) = row.get(&left_owned).and_then(extract_identifier) {
-                    if let Some(matches) = right_by_key.get(&identifier) {
-                        for m in matches {
-                            let mut joined_row: Row = HashMap::new();
-                            for (k, v) in row {
-                                joined_row.insert(k.clone(), v.clone());
-                            }
-                            for (k, v) in *m {
-                                joined_row.insert(k.clone(), v.clone());
-                            }
-                            dataframe.push(joined_row);
-                        }
-                    }
-                }
-            }
-            dataframe
+        let apply = Box::new(move |left: &Dataframe, right: &Dataframe| {
+            let right_rows_by_key = Self::group_rows(&right_key, right);
+
+            left.iter()
+                .flat_map(|left_row| {
+                    left_row
+                        .get(&left_key)
+                        .and_then(extract_identifier)
+                        .and_then(|identifier| right_rows_by_key.get(&identifier))
+                        .map_or(vec![], |matching_rows| {
+                            matching_rows
+                                .iter()
+                                .map(|matching_row| {
+                                    left_row
+                                        .iter()
+                                        .chain(matching_row.iter())
+                                        .map(|(key, value)| (key.clone(), value.clone()))
+                                        .collect::<Row>()
+                                })
+                                .collect::<Vec<_>>()
+                        })
+                })
+                .collect()
         });
+
         InnerJoin { apply }
     }
 }
@@ -114,7 +125,7 @@ mod test {
         let op = InnerJoin::new("id = id");
 
         let result = op.transform(dfs);
-        assert_eq!(result[0], vec![],)
+        assert_eq!(result[0], vec![])
     }
 
     #[test]
@@ -133,7 +144,7 @@ mod test {
         let op = InnerJoin::new("non_existing = non_existing");
 
         let result = op.transform(dfs);
-        assert_eq!(result[0], vec![],)
+        assert_eq!(result[0], vec![])
     }
 
     #[test]
@@ -177,7 +188,7 @@ mod test {
                     (String::from("foo"), ColumnValue::Integer(1)),
                     (String::from("bar"), ColumnValue::Integer(4)),
                 ])
-            ],
+            ]
         )
     }
 
@@ -215,8 +226,8 @@ mod test {
                     (String::from("id"), ColumnValue::String(String::from("id1"))),
                     (String::from("foo"), ColumnValue::Integer(0)),
                     (String::from("bar"), ColumnValue::Integer(4)),
-                ]),
-            ],
+                ])
+            ]
         )
     }
 
@@ -254,8 +265,8 @@ mod test {
                     (String::from("id"), ColumnValue::String(String::from("id1"))),
                     (String::from("foo"), ColumnValue::Integer(1)),
                     (String::from("bar"), ColumnValue::Integer(3)),
-                ]),
-            ],
+                ])
+            ]
         )
     }
 }
