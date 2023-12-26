@@ -7,6 +7,7 @@ pub enum DataType {
     String,
 }
 
+/// The schema that defines a column.
 #[derive(Deserialize, Debug)]
 pub struct ColumnDefinition {
     pub column_name: String,

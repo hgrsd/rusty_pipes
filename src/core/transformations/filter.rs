@@ -1,6 +1,8 @@
 use super::Transformation;
 use crate::core::dataframe::{ColumnValue, Dataframe};
 
+/// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
+/// This operation has an arity of one: it requires a single dataframe to be provided as its input.
 pub struct Filter {
     apply: Box<dyn Fn(&Dataframe) -> Dataframe>,
 }
@@ -22,6 +24,9 @@ macro_rules! compare {
 }
 
 impl Filter {
+    /// Construct a new Filter from the given predicate. The expected format of this predicate is
+    /// "column_name operation literal" where operation is one of >, >=, <, <=, ==, or != and the literal is
+    /// an integer, decimal, or string. E.g., "column_one >= 100.5".
     pub fn new(predicate: &str) -> Self {
         let mut s = predicate.split_whitespace();
         let field_name = s.next().unwrap().to_owned();

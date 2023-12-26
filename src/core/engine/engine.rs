@@ -23,11 +23,14 @@ fn build_pipeline(definition: &TransformationDefinition) -> Vec<Box<dyn Transfor
         .collect()
 }
 
+/// The engine is the entry point for running a pipeline. It is constructed based on a pipeline definition.
+/// It then sources the data and runs the transformations, yielding the outputs of each transformation.
 pub struct Engine {
     pipeline_definition: PipelineDefinition,
 }
 
 impl Engine {
+    /// Construct an Engine based on a given pipeline definition.
     pub fn from_definition(pipeline_definition: PipelineDefinition) -> Self {
         Engine {
             pipeline_definition,
@@ -50,7 +53,11 @@ impl Engine {
             .collect()
     }
 
-    pub fn run(&mut self) -> Result<HashMap<String, Vec<Dataframe>>, Box<dyn Error>> {
+    /// Run the pipeline. This will:
+    /// - fetch data from the defined data sources
+    /// - run each transformation
+    /// - yield a map of each transformation output, keyed by their name
+    pub fn run(&mut self) -> HashMap<String, Vec<Dataframe>> {
         let dfs = self.load_dataframes();
 
         let result = self
@@ -73,6 +80,6 @@ impl Engine {
             })
             .collect();
 
-        Ok(result)
+        result
     }
 }

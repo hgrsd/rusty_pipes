@@ -15,6 +15,8 @@ pub struct FileLoader<'a> {
 }
 
 impl<'a> FileLoader<'a> {
+    /// Construct a new file loader for the given path, format, and using the specified schema. This is a lazy
+    /// operation; until the "load" method is run, no work will be performed.
     pub fn new(path: &'a Path, format: &'a Format, schema: &'a Vec<ColumnDefinition>) -> Self {
         FileLoader {
             path,

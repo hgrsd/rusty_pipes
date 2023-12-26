@@ -12,6 +12,8 @@ fn extract_identifier(from: &ColumnValue) -> Option<String> {
     }
 }
 
+/// Inner Join two data frames. This operation has an arity of two: it requires two dataframes to be provided as its
+/// inputs.
 pub struct InnerJoin {
     apply: Box<dyn Fn(&Dataframe, &Dataframe) -> Dataframe>,
 }
@@ -31,6 +33,9 @@ impl InnerJoin {
         grouped
     }
 
+    /// Construct a new InnerJoin from the given join clause.
+    /// The expected format of this clause is "left_column_name = right_column_name" where left_column_name
+    /// and right_column_name refer to the names of the identifying columns in the left and right dataframes.
     pub fn new(join_on: &str) -> Self {
         let (left_field_name, right_field_name) = join_on.split_once("=").unwrap();
         let (left_owned, right_owned) = (
