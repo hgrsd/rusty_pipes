@@ -80,8 +80,8 @@ impl InnerJoin {
 }
 
 impl Transformation for InnerJoin {
-    fn transform(&self, dfs: Vec<Dataframe>) -> Vec<Dataframe> {
-        vec![(self.apply)(&dfs[0], &dfs[1])]
+    fn transform(&self, dfs: &Vec<&Dataframe>) -> Vec<Dataframe> {
+        vec![(self.apply)(dfs[0], dfs[1])]
     }
 }
 
@@ -124,7 +124,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(result[0], vec![])
     }
 
@@ -142,8 +144,9 @@ mod test {
         ];
 
         let op = InnerJoin::new("non_existing = non_existing");
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(dfs);
+        let result = op.transform(&df_refs);
         assert_eq!(result[0], vec![])
     }
 
@@ -174,7 +177,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(
             result[0],
             vec![
@@ -213,7 +218,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(
             result[0],
             vec![
@@ -252,7 +259,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(
             result[0],
             vec![
@@ -285,7 +294,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(
             result[0],
             vec![HashMap::from([
@@ -311,7 +322,9 @@ mod test {
 
         let op = InnerJoin::new("id = id");
 
-        let result = op.transform(dfs);
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
         assert_eq!(result[0], vec![],)
     }
 }

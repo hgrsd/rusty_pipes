@@ -10,21 +10,17 @@ use crate::{
     transformations::{Filter, InnerJoin, Transformation},
 };
 
-fn build_pipeline(
-    definition: &TransformationDefinition,
-    context: &Context,
-) -> Vec<Box<dyn Transformation>> {
-    definition
-        .operations
-        .iter()
-        .map(|def| {
-            let op: Box<dyn Transformation> = match def {
-                Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)),
-                Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
-            };
-            op
-        })
-        .collect()
+fn build_pipeline<'a>(
+    definition: &'a TransformationDefinition,
+    context: &'a Context,
+) -> impl Iterator<Item = Box<dyn Transformation>> + 'a {
+    definition.operations.iter().map(|def| {
+        let op: Box<dyn Transformation> = match def {
+            Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)),
+            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
+        };
+        op
+    })
 }
 
 /// The engine is the entry point for running a pipeline. It is constructed based on a pipeline definition.
@@ -70,17 +66,28 @@ impl Engine {
             .par_iter()
             .map(|(name, definition)| {
                 let pipeline = build_pipeline(definition, context);
-                let data_frames = definition
+                let source_dataframes = definition
                     .sources
                     .iter()
-                    .map(|source| dfs.get(source).unwrap().clone())
+                    .map(|source| dfs.get(source).unwrap())
                     .collect();
-                (
-                    name.clone(),
-                    pipeline
-                        .into_iter()
-                        .fold(data_frames, |acc, transformer| transformer.transform(acc)),
-                )
+
+                let mut result: Option<Vec<Dataframe>> = None;
+                for transformation in pipeline {
+                    match result {
+                        None => {
+                            // if we are in this arm, we are doing the first transformation in the pipeline; so we take
+                            // the source dataframes as our input
+                            result = Some(transformation.transform(&source_dataframes));
+                        }
+                        Some(previous_result) => {
+                            // otherwise, we apply the current transformation to the previous result
+                            let refs = previous_result.iter().collect();
+                            result = Some(transformation.transform(&refs));
+                        }
+                    }
+                }
+                (name.clone(), result.unwrap_or(vec![]))
             })
             .collect();
 
