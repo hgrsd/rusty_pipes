@@ -87,3 +87,29 @@ impl Engine {
         result
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::dataframe::ColumnValue;
+
+    #[test]
+    fn it_runs_a_pipeline() {
+        let raw_definition = std::fs::read_to_string("examples/filter.json").unwrap();
+        let parsed: PipelineDefinition = serde_json::from_str(&raw_definition).unwrap();
+        let mut engine = Engine::from_definition(parsed);
+        let result = engine.run(&Context::new(HashMap::default()));
+
+        assert_eq!(result.len(), 1);
+        assert_eq!(
+            result.get("filtered").unwrap()[0],
+            vec![HashMap::from([
+                (
+                    String::from("first_name"),
+                    ColumnValue::String(String::from("Jen"))
+                ),
+                (String::from("salary"), ColumnValue::Decimal(19319.0)),
+            ])]
+        );
+    }
+}
