@@ -14,16 +14,13 @@ fn build_pipeline<'a>(
     definition: &'a TransformationDefinition,
     context: &'a Context,
 ) -> impl Iterator<Item = Box<dyn Transformation>> + 'a {
-    definition
-        .operations
-        .iter()
-        .map(|def| {
-            let op: Box<dyn Transformation> = match def {
-                Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)),
-                Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
-            };
-            op
-        })
+    definition.operations.iter().map(|def| {
+        let op: Box<dyn Transformation> = match def {
+            Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)),
+            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
+        };
+        op
+    })
 }
 
 /// The engine is the entry point for running a pipeline. It is constructed based on a pipeline definition.
@@ -69,7 +66,7 @@ impl Engine {
             .par_iter()
             .map(|(name, definition)| {
                 let pipeline = build_pipeline(definition, context);
-                let source_dataframes: Vec<&Dataframe> = definition
+                let source_dataframes = definition
                     .sources
                     .iter()
                     .map(|source| dfs.get(source).unwrap())
