@@ -78,13 +78,17 @@ impl Engine {
 
                 let mut result: Option<Vec<Dataframe>> = None;
                 for transformation in pipeline.iter() {
-                    // first transformation, using source dataframes
-                    if result.is_none() {
-                        result = Some(transformation.transform(&source_dataframes));
-                    } else {
-                        let dfs = result.unwrap();
-                        let refs = dfs.iter().collect::<Vec<_>>();
-                        result = Some(transformation.transform(&refs));
+                    match result {
+                        None => {
+                            // if we are in this arm, we are doing the first transformation in the pipeline; so we take
+                            // the source dataframes as our input
+                            result = Some(transformation.transform(&source_dataframes));
+                        }
+                        Some(previous_result) => {
+                            // otherwise, we apply the current transformation to the previous result
+                            let refs = previous_result.iter().collect();
+                            result = Some(transformation.transform(&refs));
+                        }
                     }
                 }
                 (name.clone(), result.unwrap_or(vec![]))
