@@ -17,3 +17,9 @@ impl Context {
         self.parameters.get(key).map(|value| value.as_str())
     }
 }
+
+impl Default for Context {
+    fn default() -> Self {
+        Context { parameters: HashMap::new() }
+    }
+}

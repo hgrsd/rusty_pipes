@@ -105,7 +105,7 @@ mod test {
         let raw_definition = std::fs::read_to_string("examples/filter.json").unwrap();
         let parsed: PipelineDefinition = serde_json::from_str(&raw_definition).unwrap();
         let mut engine = Engine::from_definition(parsed);
-        let result = engine.run(&Context::new(HashMap::default()));
+        let result = engine.run(Default::default());
 
         assert_eq!(result.len(), 1);
         assert_eq!(
