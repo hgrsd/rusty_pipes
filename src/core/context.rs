@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 /// A context that can be accessed by the pipeline at runtime. This can contain things like parameters to be passed to
 /// Loaders or Transformations.
+#[derive(Default)]
 pub struct Context {
     parameters: HashMap<String, String>,
 }
@@ -18,8 +19,4 @@ impl Context {
     }
 }
 
-impl Default for Context {
-    fn default() -> Self {
-        Context { parameters: HashMap::new() }
-    }
-}
+

@@ -21,11 +21,7 @@ pub struct InnerJoin {
 impl InnerJoin {
     fn group_rows<'a>(key: &str, df: &'a Dataframe) -> HashMap<String, Vec<&'a Row>> {
         let grouped = df.iter().filter_map(|row| {
-            if let Some(identifier) = row.get(key).and_then(extract_identifier) {
-                Some((identifier, vec![row]))
-            } else {
-                None
-            }
+            row.get(key).and_then(extract_identifier).map(|identifier| (identifier, vec![row]))
         });
 
         let mut result: HashMap<String, Vec<&Row>> = HashMap::new();
@@ -44,7 +40,7 @@ impl InnerJoin {
     /// The expected format of this clause is "left_column_name = right_column_name" where left_column_name
     /// and right_column_name refer to the names of the identifying columns in the left and right dataframes.
     pub fn new(join_on: &str) -> Self {
-        let (left_field_name, right_field_name) = join_on.split_once("=").unwrap();
+        let (left_field_name, right_field_name) = join_on.split_once('=').unwrap();
         let (left_key, right_key) = (
             left_field_name.trim().to_owned(),
             right_field_name.trim().to_owned(),

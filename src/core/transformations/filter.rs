@@ -25,10 +25,10 @@ macro_rules! compare {
 }
 
 fn resolve_parameter(key: &str, context: &Context) -> String {
-    if key.starts_with(":") {
+    if key.starts_with(':') {
         context
             .parameter_value(key.chars().skip(1).collect::<String>().as_str())
-            .expect(&format!("No parameter with key {} found", key))
+            .unwrap_or_else(|| panic!("No parameter with key {} found", key))
             .to_owned()
     } else {
         key.to_owned()
