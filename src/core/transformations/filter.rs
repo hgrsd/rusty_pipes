@@ -20,6 +20,7 @@ macro_rules! compare {
                 v.$cmp(&parsed)
             }
             ColumnValue::String(v) => v.as_str().$cmp($target),
+            _ => false
         }
     };
 }

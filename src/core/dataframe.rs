@@ -7,6 +7,7 @@ pub enum ColumnValue {
     Integer(i64),
     Decimal(f64),
     String(String),
+    None
 }
 
 /// A type alias for a row, which is implemented as a hash map from column name to value.

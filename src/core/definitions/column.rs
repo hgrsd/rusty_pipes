@@ -12,5 +12,5 @@ pub enum DataType {
 pub struct ColumnDefinition {
     pub column_name: String,
     pub data_type: DataType,
-    pub mandatory: bool,
+    pub required: bool,
 }
