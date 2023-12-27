@@ -10,10 +10,10 @@ use crate::{
     transformations::{Filter, InnerJoin, Transformation},
 };
 
-fn build_pipeline(
-    definition: &TransformationDefinition,
-    context: &Context,
-) -> Vec<Box<dyn Transformation>> {
+fn build_pipeline<'a>(
+    definition: &'a TransformationDefinition,
+    context: &'a Context,
+) -> impl Iterator<Item = Box<dyn Transformation>> + 'a {
     definition
         .operations
         .iter()
@@ -24,7 +24,6 @@ fn build_pipeline(
             };
             op
         })
-        .collect()
 }
 
 /// The engine is the entry point for running a pipeline. It is constructed based on a pipeline definition.
@@ -77,7 +76,7 @@ impl Engine {
                     .collect();
 
                 let mut result: Option<Vec<Dataframe>> = None;
-                for transformation in pipeline.iter() {
+                for transformation in pipeline {
                     match result {
                         None => {
                             // if we are in this arm, we are doing the first transformation in the pipeline; so we take
