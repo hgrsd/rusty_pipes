@@ -71,8 +71,8 @@ impl Filter {
 }
 
 impl Transformation for Filter {
-    fn transform(&self, dfs: Vec<Dataframe>) -> Vec<Dataframe> {
-        vec![(self.apply)(&dfs[0])]
+    fn transform(&self, dfs: &Vec<&Dataframe>) -> Vec<Dataframe> {
+        vec![(self.apply)(dfs[0])]
     }
 }
 
@@ -96,8 +96,10 @@ mod test {
     #[test]
     fn filter_gt() {
         let op = Filter::new("foo > 1", &ctx(HashMap::default()));
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -112,7 +114,10 @@ mod test {
     fn filter_gte() {
         let op = Filter::new("foo >= 1", &ctx(HashMap::default()));
 
-        let result = op.transform(df());
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -126,8 +131,10 @@ mod test {
     #[test]
     fn filter_lt() {
         let op = Filter::new("foo < 1", &ctx(HashMap::default()));
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -141,8 +148,10 @@ mod test {
     #[test]
     fn filter_lte() {
         let op = Filter::new("foo <= 1", &ctx(HashMap::default()));
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -156,8 +165,10 @@ mod test {
     #[test]
     fn filter_eq() {
         let op = Filter::new("foo == 1", &ctx(HashMap::default()));
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -171,8 +182,10 @@ mod test {
     #[test]
     fn filter_ne() {
         let op = Filter::new("foo != 1", &ctx(HashMap::default()));
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],
@@ -189,8 +202,10 @@ mod test {
             "foo != :param_name",
             &ctx(HashMap::from([("param_name".to_owned(), "1".to_owned())])),
         );
+        let dfs = df();
+        let df_refs = dfs.iter().collect();
 
-        let result = op.transform(df());
+        let result = op.transform(&df_refs);
 
         assert_eq!(
             result[0],

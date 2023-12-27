@@ -70,17 +70,24 @@ impl Engine {
             .par_iter()
             .map(|(name, definition)| {
                 let pipeline = build_pipeline(definition, context);
-                let data_frames = definition
+                let source_dataframes: Vec<&Dataframe> = definition
                     .sources
                     .iter()
-                    .map(|source| dfs.get(source).unwrap().clone())
+                    .map(|source| dfs.get(source).unwrap())
                     .collect();
-                (
-                    name.clone(),
-                    pipeline
-                        .into_iter()
-                        .fold(data_frames, |acc, transformer| transformer.transform(acc)),
-                )
+
+                let mut result: Option<Vec<Dataframe>> = None;
+                for transformation in pipeline.iter() {
+                    // first transformation, using source dataframes
+                    if result.is_none() {
+                        result = Some(transformation.transform(&source_dataframes));
+                    } else {
+                        let dfs = result.unwrap();
+                        let refs = dfs.iter().collect::<Vec<_>>();
+                        result = Some(transformation.transform(&refs));
+                    }
+                }
+                (name.clone(), result.unwrap_or(vec![]))
             })
             .collect();
 
