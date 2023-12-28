@@ -198,6 +198,28 @@ mod test {
     }
 
     #[test]
+    fn filter_contains() {
+        let op = Filter::new(
+            "foo contains bar",
+            &Default::default()
+        );
+        let dfs = vec![vec![
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
+        ]];
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
+
+        assert_eq!(
+            result[0],
+            vec![
+                HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
+            ]
+        )
+    }
+
+    #[test]
     fn filter_using_parameter() {
         let op = Filter::new(
             "foo != :param_name",
