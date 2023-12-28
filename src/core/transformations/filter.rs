@@ -20,7 +20,7 @@ macro_rules! compare {
                 v.$cmp(&parsed)
             }
             ColumnValue::String(v) => v.as_str().$cmp($target),
-            _ => false
+            _ => false,
         }
     };
 }
@@ -209,13 +209,16 @@ mod test {
 
     #[test]
     fn filter_contains() {
-        let op = Filter::new(
-            "foo contains bar",
-            &Default::default()
-        );
+        let op = Filter::new("foo contains bar", &Default::default());
         let dfs = vec![vec![
-            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
-            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
+            HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("barrister")),
+            )]),
+            HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("arable")),
+            )]),
         ]];
         let df_refs = dfs.iter().collect();
 
@@ -223,21 +226,25 @@ mod test {
 
         assert_eq!(
             result[0],
-            vec![
-                HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
-            ]
+            vec![HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("barrister"))
+            )]),]
         )
     }
 
     #[test]
     fn filter_not_contains() {
-        let op = Filter::new(
-            "foo !contains bar",
-            &Default::default()
-        );
+        let op = Filter::new("foo !contains bar", &Default::default());
         let dfs = vec![vec![
-            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
-            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
+            HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("barrister")),
+            )]),
+            HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("arable")),
+            )]),
         ]];
         let df_refs = dfs.iter().collect();
 
@@ -245,9 +252,10 @@ mod test {
 
         assert_eq!(
             result[0],
-            vec![
-                HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
-            ]
+            vec![HashMap::from([(
+                String::from("foo"),
+                ColumnValue::String(String::from("arable"))
+            )]),]
         )
     }
 
