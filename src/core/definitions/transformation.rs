@@ -5,8 +5,8 @@ use serde::Deserialize;
 #[serde(tag = "type")]
 pub enum Operation {
     /// The expected format of this predicate is
-    /// "column_name comparison literal" where comparison is one of >, >=, <, <=, ==, or != and the literal is
-    /// an integer, decimal, or string. E.g., "column_one > 100".
+    /// "column_name operator literal" where operator is one of >, >=, <, <=, ==, !=, contains and !contains; and the literal is
+    /// an integer, decimal, or string. E.g., "column_one > 100" or "column_two !contains foo".
     ///
     /// This operation has an arity of 1 (i.e., it requires a single dataframe to operate on).
     Filter { predicate: String },
