@@ -36,6 +36,14 @@ fn resolve_parameter(key: &str, context: &Context) -> String {
     }
 }
 
+fn contains(value: &ColumnValue, target: &str) -> bool {
+    if let ColumnValue::String(v) = value {
+        v.contains(target)
+    } else {
+        false
+    }
+}
+
 impl Filter {
     /// Construct a new Filter from the given predicate. The expected format of this predicate is
     /// "column_name operation literal" where operation is one of >, >=, <, <=, ==, or != and the literal is
@@ -57,6 +65,8 @@ impl Filter {
                             "<=" => compare!(le, value, &target),
                             "==" => compare!(eq, value, &target),
                             "!=" => compare!(ne, value, &target),
+                            "contains" => contains(value, target.as_str()),
+                            "!contains" => !contains(value, target.as_str()),
                             _ => unimplemented!(),
                         }
                     } else {
@@ -193,6 +203,50 @@ mod test {
             vec![
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
+            ]
+        )
+    }
+
+    #[test]
+    fn filter_contains() {
+        let op = Filter::new(
+            "foo contains bar",
+            &Default::default()
+        );
+        let dfs = vec![vec![
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
+        ]];
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
+
+        assert_eq!(
+            result[0],
+            vec![
+                HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
+            ]
+        )
+    }
+
+    #[test]
+    fn filter_not_contains() {
+        let op = Filter::new(
+            "foo !contains bar",
+            &Default::default()
+        );
+        let dfs = vec![vec![
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("barrister")))]),
+            HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
+        ]];
+        let df_refs = dfs.iter().collect();
+
+        let result = op.transform(&df_refs);
+
+        assert_eq!(
+            result[0],
+            vec![
+                HashMap::from([(String::from("foo"), ColumnValue::String(String::from("arable")))]),
             ]
         )
     }
