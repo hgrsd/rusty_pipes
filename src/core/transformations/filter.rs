@@ -1,12 +1,15 @@
 use super::Transformation;
 use crate::core::context::Context;
 use crate::core::dataframe::{ColumnValue, Dataframe};
+use crate::core::error::RustyPipesError;
 use crate::core::result::RustyPipesResult;
 
 /// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
 /// This operation has an arity of one: it requires a single dataframe to be provided as its input.
-pub struct Filter {
-    apply: Box<dyn Fn(&Dataframe) -> RustyPipesResult<Dataframe>>,
+pub struct Filter<'a> {
+    field_name: &'a str,
+    operator: &'a str,
+    resolved_target: String,
 }
 
 macro_rules! compare {
@@ -26,14 +29,16 @@ macro_rules! compare {
     };
 }
 
-fn resolve_parameter(key: &str, context: &Context) -> String {
+fn resolve_parameter(key: &str, context: &Context) -> RustyPipesResult<String> {
     if key.starts_with(':') {
         context
             .parameter_value(key.chars().skip(1).collect::<String>().as_str())
-            .unwrap_or_else(|| panic!("No parameter with key {} found", key))
-            .to_owned()
+            .map(|value| value.to_owned())
+            .ok_or_else(|| {
+                RustyPipesError::TransformationError(format!("Unable to resolve parameter {}", key))
+            })
     } else {
-        key.to_owned()
+        Ok(key.to_owned())
     }
 }
 
@@ -45,47 +50,48 @@ fn contains(value: &ColumnValue, target: &str) -> bool {
     }
 }
 
-impl Filter {
+impl<'a> Filter<'a> {
     /// Construct a new Filter from the given predicate. The expected format of this predicate is
     /// "column_name operation literal" where operation is one of >, >=, <, <=, ==, or != and the literal is
     /// an integer, decimal, or string. E.g., "column_one >= 100.5".
-    pub fn new(predicate: &str, context: &Context) -> Self {
+    pub fn new(predicate: &'a str, context: &Context) -> RustyPipesResult<Self> {
         let mut s = predicate.split_whitespace();
-        let field_name = s.next().unwrap().to_owned();
-        let operator = s.next().unwrap().to_owned();
-        let target = s.next().map(|x| resolve_parameter(x, context)).unwrap();
+        let field_name = s.next().unwrap();
+        let operator = s.next().unwrap();
+        let target = s.next().unwrap();
+        let resolved_target = resolve_parameter(target, context)?;
 
-        let apply = Box::new(move |df: &Dataframe| {
-            Ok(df
-                .iter()
-                .filter(|row| {
-                    if let Some(value) = row.get(&field_name) {
-                        match operator.as_str() {
-                            ">" => compare!(gt, value, &target),
-                            ">=" => compare!(ge, value, &target),
-                            "<" => compare!(lt, value, &target),
-                            "<=" => compare!(le, value, &target),
-                            "==" => compare!(eq, value, &target),
-                            "!=" => compare!(ne, value, &target),
-                            "contains" => contains(value, target.as_str()),
-                            "!contains" => !contains(value, target.as_str()),
-                            _ => unimplemented!(),
-                        }
-                    } else {
-                        true
-                    }
-                })
-                .cloned()
-                .collect())
-        });
-
-        Filter { apply }
+        Ok(Filter {
+            field_name,
+            operator,
+            resolved_target,
+        })
     }
 }
 
-impl Transformation for Filter {
+impl Transformation for Filter<'_> {
     fn transform(&self, dfs: &Vec<&Dataframe>) -> RustyPipesResult<Vec<Dataframe>> {
-        (self.apply)(dfs[0]).map(|x| vec![x])
+        let mut filtered = vec![];
+        for row in dfs[0] {
+            if let Some(value) = row.get(self.field_name) {
+                let should_include = match self.operator {
+                    ">" => compare!(gt, value, &self.resolved_target),
+                    ">=" => compare!(ge, value, &self.resolved_target),
+                    "<" => compare!(lt, value, &self.resolved_target),
+                    "<=" => compare!(le, value, &self.resolved_target),
+                    "==" => compare!(eq, value, &self.resolved_target),
+                    "!=" => compare!(ne, value, &self.resolved_target),
+                    "contains" => contains(value, self.resolved_target.as_str()),
+                    "!contains" => !contains(value, self.resolved_target.as_str()),
+                    _ => unimplemented!(),
+                };
+
+                if should_include {
+                    filtered.push(row.clone());
+                }
+            }
+        }
+        Ok(vec![filtered])
     }
 }
 
@@ -108,7 +114,7 @@ mod test {
 
     #[test]
     fn filter_gt() {
-        let op = Filter::new("foo > 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo > 1", &ctx(HashMap::default())).unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
@@ -125,7 +131,7 @@ mod test {
 
     #[test]
     fn filter_gte() {
-        let op = Filter::new("foo >= 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo >= 1", &ctx(HashMap::default())).unwrap();
 
         let dfs = df();
         let df_refs = dfs.iter().collect();
@@ -143,7 +149,7 @@ mod test {
 
     #[test]
     fn filter_lt() {
-        let op = Filter::new("foo < 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo < 1", &ctx(HashMap::default())).unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
@@ -160,7 +166,7 @@ mod test {
 
     #[test]
     fn filter_lte() {
-        let op = Filter::new("foo <= 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo <= 1", &ctx(HashMap::default())).unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
@@ -177,7 +183,7 @@ mod test {
 
     #[test]
     fn filter_eq() {
-        let op = Filter::new("foo == 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo == 1", &ctx(HashMap::default())).unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
@@ -194,7 +200,7 @@ mod test {
 
     #[test]
     fn filter_ne() {
-        let op = Filter::new("foo != 1", &ctx(HashMap::default()));
+        let op = Filter::new("foo != 1", &ctx(HashMap::default())).unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
@@ -211,7 +217,7 @@ mod test {
 
     #[test]
     fn filter_contains() {
-        let op = Filter::new("foo contains bar", &Default::default());
+        let op = Filter::new("foo contains bar", &Default::default()).unwrap();
         let dfs = vec![vec![
             HashMap::from([(
                 String::from("foo"),
@@ -237,7 +243,7 @@ mod test {
 
     #[test]
     fn filter_not_contains() {
-        let op = Filter::new("foo !contains bar", &Default::default());
+        let op = Filter::new("foo !contains bar", &Default::default()).unwrap();
         let dfs = vec![vec![
             HashMap::from([(
                 String::from("foo"),
@@ -266,7 +272,8 @@ mod test {
         let op = Filter::new(
             "foo != :param_name",
             &ctx(HashMap::from([("param_name".to_owned(), "1".to_owned())])),
-        );
+        )
+        .unwrap();
         let dfs = df();
         let df_refs = dfs.iter().collect();
 
