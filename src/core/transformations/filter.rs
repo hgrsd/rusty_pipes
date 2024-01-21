@@ -1,11 +1,12 @@
 use super::Transformation;
 use crate::core::context::Context;
 use crate::core::dataframe::{ColumnValue, Dataframe};
+use crate::core::result::RustyPipesResult;
 
 /// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
 /// This operation has an arity of one: it requires a single dataframe to be provided as its input.
 pub struct Filter {
-    apply: Box<dyn Fn(&Dataframe) -> Dataframe>,
+    apply: Box<dyn Fn(&Dataframe) -> RustyPipesResult<Dataframe>>,
 }
 
 macro_rules! compare {
@@ -55,7 +56,8 @@ impl Filter {
         let target = s.next().map(|x| resolve_parameter(x, context)).unwrap();
 
         let apply = Box::new(move |df: &Dataframe| {
-            df.iter()
+            Ok(df
+                .iter()
                 .filter(|row| {
                     if let Some(value) = row.get(&field_name) {
                         match operator.as_str() {
@@ -74,7 +76,7 @@ impl Filter {
                     }
                 })
                 .cloned()
-                .collect()
+                .collect())
         });
 
         Filter { apply }
@@ -82,8 +84,8 @@ impl Filter {
 }
 
 impl Transformation for Filter {
-    fn transform(&self, dfs: &Vec<&Dataframe>) -> Vec<Dataframe> {
-        vec![(self.apply)(dfs[0])]
+    fn transform(&self, dfs: &Vec<&Dataframe>) -> RustyPipesResult<Vec<Dataframe>> {
+        (self.apply)(dfs[0]).map(|x| vec![x])
     }
 }
 
@@ -113,7 +115,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([(
                 String::from("foo"),
                 ColumnValue::Integer(2)
@@ -131,7 +133,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
@@ -148,7 +150,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([(
                 String::from("foo"),
                 ColumnValue::Integer(0)
@@ -165,7 +167,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(1))]),
@@ -182,7 +184,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([(
                 String::from("foo"),
                 ColumnValue::Integer(1)
@@ -199,7 +201,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
@@ -225,7 +227,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([(
                 String::from("foo"),
                 ColumnValue::String(String::from("barrister"))
@@ -251,7 +253,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([(
                 String::from("foo"),
                 ColumnValue::String(String::from("arable"))
@@ -271,7 +273,7 @@ mod test {
         let result = op.transform(&df_refs);
 
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(0))]),
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),

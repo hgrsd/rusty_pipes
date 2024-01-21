@@ -10,6 +10,8 @@ use crate::{
     transformations::{Filter, InnerJoin, Transformation},
 };
 
+use super::result::RustyPipesResult;
+
 fn build_pipeline<'a>(
     definition: &'a TransformationDefinition,
     context: &'a Context,
@@ -37,7 +39,7 @@ impl Engine {
         }
     }
 
-    fn load_dataframes(&self) -> HashMap<String, Dataframe> {
+    fn load_dataframes(&self) -> HashMap<String, RustyPipesResult<Dataframe>> {
         self.pipeline_definition
             .sources
             .par_iter()
@@ -48,7 +50,7 @@ impl Engine {
                         FileLoader::new(path, format, &definition.schema)
                     }
                 };
-                (name.clone(), loader.load().unwrap())
+                (name.clone(), loader.load())
             })
             .collect()
     }
@@ -57,41 +59,52 @@ impl Engine {
     /// - fetch data from the defined data sources
     /// - run each transformation
     /// - yield a map of each transformation output, keyed by their name
-    pub fn run(&mut self, context: &Context) -> HashMap<String, Vec<Dataframe>> {
+    pub fn run(&mut self, context: &Context) -> HashMap<String, RustyPipesResult<Vec<Dataframe>>> {
         let dfs = self.load_dataframes();
 
-        let result = self
-            .pipeline_definition
+        self.pipeline_definition
             .transformations
             .par_iter()
             .map(|(name, definition)| {
                 let pipeline = build_pipeline(definition, context);
-                let source_dataframes = definition
+                let source_dataframes: Vec<&RustyPipesResult<Dataframe>> = definition
                     .sources
                     .iter()
                     .map(|source| dfs.get(source).unwrap())
                     .collect();
 
-                let mut result: Option<Vec<Dataframe>> = None;
+                if let Some(err) = source_dataframes.iter().find_map(|x| match x {
+                    Err(err) => Some(err),
+                    _ => None,
+                }) {
+                    return (name.clone(), Err(err.clone()));
+                }
+
+                let unwrapped = source_dataframes
+                    .iter()
+                    .map(|x| x.as_ref().unwrap())
+                    .collect::<Vec<&Dataframe>>();
+
+                let mut previous_output: Option<RustyPipesResult<Vec<Dataframe>>> = None;
                 for transformation in pipeline {
-                    match result {
+                    match &previous_output {
                         None => {
-                            // if we are in this arm, we are doing the first transformation in the pipeline; so we take
+                            // if we are in this arm, we are doing the fist transformation in the pipeline; so we take
                             // the source dataframes as our input
-                            result = Some(transformation.transform(&source_dataframes));
+                            previous_output = Some(transformation.transform(&unwrapped));
                         }
-                        Some(previous_result) => {
+                        Some(prev) => {
                             // otherwise, we apply the current transformation to the previous result
-                            let refs = previous_result.iter().collect();
-                            result = Some(transformation.transform(&refs));
+                            if let Ok(values) = prev {
+                                let refs = values.iter().collect();
+                                previous_output = Some(transformation.transform(&refs));
+                            }
                         }
                     }
                 }
-                (name.clone(), result.unwrap_or_default())
+                (name.clone(), previous_output.unwrap())
             })
-            .collect();
-
-        result
+            .collect()
     }
 }
 
@@ -106,10 +119,11 @@ mod test {
         let parsed: PipelineDefinition = serde_json::from_str(&raw_definition).unwrap();
         let mut engine = Engine::from_definition(parsed);
         let result = engine.run(&Default::default());
-
         assert_eq!(result.len(), 1);
+
+        let filtered = result.get("filtered").unwrap();
         assert_eq!(
-            result.get("filtered").unwrap()[0],
+            filtered.as_ref().unwrap()[0],
             vec![HashMap::from([
                 (
                     String::from("first_name"),

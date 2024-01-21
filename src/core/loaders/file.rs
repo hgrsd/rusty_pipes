@@ -1,8 +1,10 @@
-use std::{collections::HashMap, error::Error, path::Path};
+use std::{collections::HashMap, path::Path};
 
 use crate::core::{
     dataframe::{ColumnValue, Dataframe},
     definitions::{ColumnDefinition, DataType, Format},
+    error::RustyPipesError,
+    result::RustyPipesResult,
 };
 use crate::dataframe::Row;
 
@@ -25,17 +27,26 @@ impl<'a> FileLoader<'a> {
         }
     }
 
-    fn load_csv(&self) -> Result<Dataframe, Box<dyn Error>> {
-        let mut reader = csv::Reader::from_path(self.path)?;
+    fn load_csv(&self) -> RustyPipesResult<Dataframe> {
+        let mut reader = csv::Reader::from_path(self.path)
+            .map_err(|e| RustyPipesError::LoaderError(e.to_string()))?;
         let mut df = vec![];
         for row_raw in reader.records() {
             let mut row: Row = HashMap::new();
-            let result = row_raw?;
+            let result = row_raw.map_err(|e| RustyPipesError::LoaderError(e.to_string()))?;
             for (i, definition) in self.schema.iter().enumerate() {
                 let value = &result[i];
                 let parsed_value = match definition.data_type {
-                    DataType::Integer => ColumnValue::Integer(value.parse::<i64>()?),
-                    DataType::Decimal => ColumnValue::Decimal(value.parse::<f64>()?),
+                    DataType::Integer => ColumnValue::Integer(
+                        value
+                            .parse::<i64>()
+                            .map_err(|e| RustyPipesError::LoaderError(e.to_string()))?,
+                    ),
+                    DataType::Decimal => ColumnValue::Decimal(
+                        value
+                            .parse::<f64>()
+                            .map_err(|e| RustyPipesError::LoaderError(e.to_string()))?,
+                    ),
                     DataType::String => ColumnValue::String(value.to_owned()),
                 };
                 row.insert(definition.column_name.clone(), parsed_value);
@@ -47,7 +58,7 @@ impl<'a> FileLoader<'a> {
 }
 
 impl Loader for FileLoader<'_> {
-    fn load(&self) -> Result<Dataframe, Box<dyn Error>> {
+    fn load(&self) -> RustyPipesResult<Dataframe> {
         match self.format {
             Format::Csv => self.load_csv(),
         }

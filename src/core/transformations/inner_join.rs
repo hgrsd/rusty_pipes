@@ -1,4 +1,5 @@
 use crate::core::dataframe::{ColumnValue, Dataframe};
+use crate::core::result::RustyPipesResult;
 use crate::dataframe::Row;
 use std::collections::HashMap;
 
@@ -15,13 +16,15 @@ fn extract_identifier(from: &ColumnValue) -> Option<String> {
 /// Inner Join two data frames. This operation has an arity of two: it requires two dataframes to be provided as its
 /// inputs.
 pub struct InnerJoin {
-    apply: Box<dyn Fn(&Dataframe, &Dataframe) -> Dataframe>,
+    apply: Box<dyn Fn(&Dataframe, &Dataframe) -> RustyPipesResult<Dataframe>>,
 }
 
 impl InnerJoin {
     fn group_rows<'a>(key: &str, df: &'a Dataframe) -> HashMap<String, Vec<&'a Row>> {
         let grouped = df.iter().filter_map(|row| {
-            row.get(key).and_then(extract_identifier).map(|identifier| (identifier, vec![row]))
+            row.get(key)
+                .and_then(extract_identifier)
+                .map(|identifier| (identifier, vec![row]))
         });
 
         let mut result: HashMap<String, Vec<&Row>> = HashMap::new();
@@ -49,7 +52,8 @@ impl InnerJoin {
         let apply = Box::new(move |left: &Dataframe, right: &Dataframe| {
             let right_rows_by_key = Self::group_rows(&right_key, right);
 
-            left.iter()
+            Ok(left
+                .iter()
                 .flat_map(|left_row| {
                     left_row
                         .get(&left_key)
@@ -68,7 +72,7 @@ impl InnerJoin {
                                 .collect::<Vec<_>>()
                         })
                 })
-                .collect()
+                .collect())
         });
 
         InnerJoin { apply }
@@ -76,8 +80,8 @@ impl InnerJoin {
 }
 
 impl Transformation for InnerJoin {
-    fn transform(&self, dfs: &Vec<&Dataframe>) -> Vec<Dataframe> {
-        vec![(self.apply)(dfs[0], dfs[1])]
+    fn transform(&self, dfs: &Vec<&Dataframe>) -> RustyPipesResult<Vec<Dataframe>> {
+        (self.apply)(dfs[0], dfs[1]).map(|x| vec![x])
     }
 }
 
@@ -123,7 +127,7 @@ mod test {
         let df_refs = dfs.iter().collect();
 
         let result = op.transform(&df_refs);
-        assert_eq!(result[0], vec![])
+        assert_eq!(result.unwrap()[0], vec![])
     }
 
     #[test]
@@ -143,7 +147,7 @@ mod test {
         let df_refs = dfs.iter().collect();
 
         let result = op.transform(&df_refs);
-        assert_eq!(result[0], vec![])
+        assert_eq!(result.unwrap()[0], vec![])
     }
 
     #[test]
@@ -177,7 +181,7 @@ mod test {
 
         let result = op.transform(&df_refs);
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([
                     (String::from("id"), ColumnValue::String(String::from("id1"))),
@@ -218,7 +222,7 @@ mod test {
 
         let result = op.transform(&df_refs);
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([
                     (String::from("id"), ColumnValue::String(String::from("id1"))),
@@ -259,7 +263,7 @@ mod test {
 
         let result = op.transform(&df_refs);
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![
                 HashMap::from([
                     (String::from("id"), ColumnValue::String(String::from("id1"))),
@@ -294,7 +298,7 @@ mod test {
 
         let result = op.transform(&df_refs);
         assert_eq!(
-            result[0],
+            result.unwrap()[0],
             vec![HashMap::from([
                 (String::from("id"), ColumnValue::Integer(1)),
                 (String::from("foo"), ColumnValue::Integer(0)),
@@ -321,6 +325,6 @@ mod test {
         let df_refs = dfs.iter().collect();
 
         let result = op.transform(&df_refs);
-        assert_eq!(result[0], vec![],)
+        assert_eq!(result.unwrap()[0], vec![],)
     }
 }
