@@ -19,7 +19,7 @@ fn build_pipeline<'a>(
     for op_def in &definition.operations {
         let op: Box<dyn Transformation> = match op_def {
             Operation::Filter { predicate } => Box::new(Filter::new(predicate, context)?),
-            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)),
+            Operation::InnerJoin { on } => Box::new(InnerJoin::new(on)?),
         };
         transformations.push(op);
     }
