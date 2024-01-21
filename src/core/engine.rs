@@ -66,43 +66,27 @@ impl Engine {
             .transformations
             .par_iter()
             .map(|(name, definition)| {
-                let pipeline = build_pipeline(definition, context);
-                let source_dataframes: Vec<&RustyPipesResult<Dataframe>> = definition
+                let mut pipeline = build_pipeline(definition, context);
+                let source_dataframes: RustyPipesResult<Vec<&Dataframe>> = definition
                     .sources
                     .iter()
-                    .map(|source| dfs.get(source).unwrap())
+                    .map(|source| dfs.get(source).unwrap().as_ref().map_err(|err| err.clone()))
                     .collect();
 
-                if let Some(err) = source_dataframes.iter().find_map(|x| match x {
-                    Err(err) => Some(err),
-                    _ => None,
-                }) {
-                    return (name.clone(), Err(err.clone()));
-                }
+                let mut current_output = if let Some(first_transformation) = pipeline.next() {
+                    source_dataframes.and_then(|x| first_transformation.transform(&x))
+                } else {
+                    Ok(vec![])
+                };
 
-                let unwrapped = source_dataframes
-                    .iter()
-                    .map(|x| x.as_ref().unwrap())
-                    .collect::<Vec<&Dataframe>>();
-
-                let mut previous_output: Option<RustyPipesResult<Vec<Dataframe>>> = None;
                 for transformation in pipeline {
-                    match &previous_output {
-                        None => {
-                            // if we are in this arm, we are doing the fist transformation in the pipeline; so we take
-                            // the source dataframes as our input
-                            previous_output = Some(transformation.transform(&unwrapped));
-                        }
-                        Some(prev) => {
-                            // otherwise, we apply the current transformation to the previous result
-                            if let Ok(values) = prev {
-                                let refs = values.iter().collect();
-                                previous_output = Some(transformation.transform(&refs));
-                            }
-                        }
-                    }
+                    current_output = current_output.and_then(|output| {
+                        let refs = output.iter().collect();
+                        transformation.transform(&refs)
+                    });
                 }
-                (name.clone(), previous_output.unwrap())
+
+                (name.clone(), current_output)
             })
             .collect()
     }
