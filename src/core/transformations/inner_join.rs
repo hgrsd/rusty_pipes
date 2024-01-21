@@ -330,4 +330,14 @@ mod test {
         let result = op.transform(&df_refs);
         assert_eq!(result.unwrap()[0], vec![],)
     }
+
+    #[test]
+    fn unable_to_parse_clause() {
+        let op = InnerJoin::new("id > 3");
+        assert!(op.is_err_and(|err| match err {
+            RustyPipesError::TransformationError(message) =>
+                message.contains("Unable to parse join clause"),
+            _ => false,
+        }));
+    }
 }

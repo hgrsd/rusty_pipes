@@ -4,14 +4,6 @@ use crate::core::dataframe::{ColumnValue, Dataframe};
 use crate::core::error::RustyPipesError;
 use crate::core::result::RustyPipesResult;
 
-/// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
-/// This operation has an arity of one: it requires a single dataframe to be provided as its input.
-pub struct Filter<'a> {
-    field_name: &'a str,
-    operator: &'a str,
-    resolved_target: String,
-}
-
 macro_rules! compare {
     ($cmp:ident,$value:expr,$target:expr) => {
         match $value {
@@ -29,7 +21,7 @@ macro_rules! compare {
     };
 }
 
-fn resolve_parameter(key: &str, context: &Context) -> RustyPipesResult<String> {
+fn resolve_target(key: &str, context: &Context) -> RustyPipesResult<String> {
     if key.starts_with(':') {
         context
             .parameter_value(key.chars().skip(1).collect::<String>().as_str())
@@ -42,12 +34,56 @@ fn resolve_parameter(key: &str, context: &Context) -> RustyPipesResult<String> {
     }
 }
 
-fn contains(value: &ColumnValue, target: &str) -> bool {
+fn contains_text(value: &ColumnValue, target: &str) -> bool {
     if let ColumnValue::String(v) = value {
         v.contains(target)
     } else {
         false
     }
+}
+
+enum Operation {
+    Gt,
+    Ge,
+    Lt,
+    Le,
+    Eq,
+    Ne,
+    Contains,
+    NotContains,
+}
+
+impl TryFrom<&str> for Operation {
+    type Error = RustyPipesError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            ">" => Ok(Operation::Gt),
+            ">=" => Ok(Operation::Ge),
+            "<" => Ok(Operation::Lt),
+            "<=" => Ok(Operation::Le),
+            "==" => Ok(Operation::Eq),
+            "!=" => Ok(Operation::Ne),
+            "contains" => Ok(Operation::Contains),
+            "!contains" => Ok(Operation::NotContains),
+            _ => Err(RustyPipesError::TransformationError(format!(
+                "Unrecognised operation: {}",
+                value
+            ))),
+        }
+    }
+}
+
+fn parse_err(predicate: &str) -> RustyPipesError {
+    RustyPipesError::TransformationError(format!("Unable to parse predicate {}", predicate))
+}
+
+/// Filter a Dataframe based on a given predicate. Only those rows for which the predicate is true are retained.
+/// This operation has an arity of one: it requires a single dataframe to be provided as its input.
+pub struct Filter<'a> {
+    field_name: &'a str,
+    operation: Operation,
+    resolved_target: String,
 }
 
 impl<'a> Filter<'a> {
@@ -56,14 +92,14 @@ impl<'a> Filter<'a> {
     /// an integer, decimal, or string. E.g., "column_one >= 100.5".
     pub fn new(predicate: &'a str, context: &Context) -> RustyPipesResult<Self> {
         let mut s = predicate.split_whitespace();
-        let field_name = s.next().unwrap();
-        let operator = s.next().unwrap();
-        let target = s.next().unwrap();
-        let resolved_target = resolve_parameter(target, context)?;
+        let field_name = s.next().ok_or_else(|| parse_err(predicate))?;
+        let operation = s.next().ok_or_else(|| parse_err(predicate))?.try_into()?;
+        let target = s.next().ok_or_else(|| parse_err(predicate))?;
+        let resolved_target = resolve_target(target, context)?;
 
         Ok(Filter {
             field_name,
-            operator,
+            operation,
             resolved_target,
         })
     }
@@ -74,19 +110,18 @@ impl Transformation for Filter<'_> {
         let mut filtered = vec![];
         for row in dfs[0] {
             if let Some(value) = row.get(self.field_name) {
-                let should_include = match self.operator {
-                    ">" => compare!(gt, value, &self.resolved_target),
-                    ">=" => compare!(ge, value, &self.resolved_target),
-                    "<" => compare!(lt, value, &self.resolved_target),
-                    "<=" => compare!(le, value, &self.resolved_target),
-                    "==" => compare!(eq, value, &self.resolved_target),
-                    "!=" => compare!(ne, value, &self.resolved_target),
-                    "contains" => contains(value, self.resolved_target.as_str()),
-                    "!contains" => !contains(value, self.resolved_target.as_str()),
-                    _ => unimplemented!(),
+                let evaluated = match self.operation {
+                    Operation::Gt => compare!(gt, value, &self.resolved_target),
+                    Operation::Ge => compare!(ge, value, &self.resolved_target),
+                    Operation::Lt => compare!(lt, value, &self.resolved_target),
+                    Operation::Le => compare!(le, value, &self.resolved_target),
+                    Operation::Eq => compare!(eq, value, &self.resolved_target),
+                    Operation::Ne => compare!(ne, value, &self.resolved_target),
+                    Operation::Contains => contains_text(value, self.resolved_target.as_str()),
+                    Operation::NotContains => !contains_text(value, self.resolved_target.as_str()),
                 };
 
-                if should_include {
+                if evaluated {
                     filtered.push(row.clone());
                 }
             }
@@ -286,5 +321,34 @@ mod test {
                 HashMap::from([(String::from("foo"), ColumnValue::Integer(2))]),
             ]
         )
+    }
+
+    #[test]
+    fn filter_nonsense_predicate() {
+        let op = Filter::new("foo ==", &Default::default());
+        assert!(op.is_err_and(|err| match err {
+            RustyPipesError::TransformationError(message) => message.contains("Unable to parse"),
+            _ => false,
+        }));
+    }
+
+    #[test]
+    fn filter_invalid_operation() {
+        let op = Filter::new("foo === 10", &Default::default());
+        assert!(op.is_err_and(|err| match err {
+            RustyPipesError::TransformationError(message) =>
+                message.contains("Unrecognised operation"),
+            _ => false,
+        }));
+    }
+
+    #[test]
+    fn filter_unresolved_param() {
+        let op = Filter::new("foo == :bar", &Default::default());
+        assert!(op.is_err_and(|err| match err {
+            RustyPipesError::TransformationError(message) =>
+                message.contains("Unable to resolve parameter"),
+            _ => false,
+        }));
     }
 }
