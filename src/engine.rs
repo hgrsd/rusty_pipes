@@ -1,14 +1,17 @@
 use rayon::prelude::*;
 use std::{collections::HashMap, path::Path};
 
-use crate::core::context::Context;
-use crate::core::result::RustyPipesResult;
-use crate::definitions::TransformationDefinition;
 use crate::{
-    dataframe::Dataframe,
-    definitions::{Operation, PipelineDefinition, Source},
-    loaders::{FileLoader, Loader},
-    transformations::{Filter, InnerJoin, Transformation},
+    core::{
+        context::Context,
+        dataframe::Dataframe,
+        definitions::{Operation, PipelineDefinition, Source, TransformationDefinition},
+        loader::Loader,
+        result::RustyPipesResult,
+        transformation::Transformation,
+    },
+    loaders::FileLoader,
+    transformations::{Filter, InnerJoin},
 };
 
 fn build_pipeline<'a>(
@@ -103,8 +106,9 @@ impl Engine {
 
 #[cfg(test)]
 mod test {
+    use crate::core::dataframe::ColumnValue;
+
     use super::*;
-    use crate::dataframe::ColumnValue;
 
     #[test]
     fn it_runs_a_pipeline() {

@@ -1,8 +1,8 @@
-use super::Transformation;
 use crate::core::context::Context;
 use crate::core::dataframe::{ColumnValue, Dataframe};
 use crate::core::error::RustyPipesError;
 use crate::core::result::RustyPipesResult;
+use crate::core::transformation::Transformation;
 
 macro_rules! compare {
     ($cmp:ident,$value:expr,$target:expr) => {

@@ -1,8 +1,6 @@
-
-use rusty_pipes::core::engine::Engine;
-use rusty_pipes::definitions::PipelineDefinition;
-
 use std::error::Error;
+
+use rusty_pipes::{core::definitions::PipelineDefinition, engine::Engine};
 
 fn main() -> Result<(), Box<dyn Error>> {
     let raw_filter_definition = std::fs::read_to_string("examples/filter.json")?;

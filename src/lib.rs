@@ -2,8 +2,11 @@
 /// the operations defined in such a pipeline.
 pub mod core;
 
-pub use core::dataframe;
-pub use core::definitions;
-pub use core::engine;
-pub use core::loaders;
-pub use core::transformations;
+/// Engine implementation that can drive a transformation pipeline
+pub mod engine;
+
+/// Loader implementations
+pub mod loaders;
+
+/// Transformation implementations
+pub mod transformations;

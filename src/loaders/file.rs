@@ -1,14 +1,12 @@
 use std::{collections::HashMap, path::Path};
 
 use crate::core::{
-    dataframe::{ColumnValue, Dataframe},
+    dataframe::{ColumnValue, Dataframe, Row},
     definitions::{ColumnDefinition, DataType, Format},
     error::RustyPipesError,
+    loader::Loader,
     result::RustyPipesResult,
 };
-use crate::dataframe::Row;
-
-use super::loader::Loader;
 
 pub struct FileLoader<'a> {
     path: &'a Path,

@@ -1,10 +1,8 @@
-use crate::core::dataframe::{ColumnValue, Dataframe};
+use crate::core::dataframe::{ColumnValue, Dataframe, Row};
 use crate::core::error::RustyPipesError;
 use crate::core::result::RustyPipesResult;
-use crate::dataframe::Row;
+use crate::core::transformation::Transformation;
 use std::collections::HashMap;
-
-use super::Transformation;
 
 fn extract_identifier(from: &ColumnValue) -> RustyPipesResult<String> {
     match from {
